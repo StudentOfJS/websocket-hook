@@ -18,19 +18,19 @@ function App() {
   }, [ws.messages]);
   return (
     <div className="App">
-      <h1>Polkadot websocket</h1>
       <div className="card">
+        <h1>Polkadot websocket</h1>
         <p>
           <strong>{count} messages</strong>
         </p>
-        <p>
+        <div style={{ marginBottom: 40 }}>
           <strong>Last message: </strong>
           {message && <MessageBlock message={message} />}
-        </p>
-        <p>
+        </div>
+        <div>
           <strong>First message: </strong>
           {message && <MessageBlock message={first} color="lightblue" />}
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -53,6 +53,7 @@ function Val({
         margin: 10,
         padding: 10,
         backgroundColor: color ?? 'antiquewhite',
+        flexGrow: 1,
       }}
     >
       <strong>{item}: </strong>
@@ -74,7 +75,7 @@ function MessageBlock({
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
       }}
     >
       <Val
