@@ -1,34 +1,116 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useEffect, useState } from 'react';
+import './App.css';
+import useWebSocket from './useWebSocket';
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  const ws = useWebSocket('wss://polkadot.webapi.subscan.io/socket');
+  const [count, setCount] = useState(0);
+  const [message, setMessage] = useState<Record<string, string>>({});
+  const [first, setFirst] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (ws?.messages[ws.messages.length - 1]?.content?.finalized_blockNum) {
+      setMessage(ws.messages[ws.messages.length - 1].content);
+    }
+    if (ws?.messages[0]?.content?.finalized_blockNum) {
+      setFirst(ws.messages[0].content);
+    }
+    setCount(ws.messages.length);
+  }, [ws.messages]);
   return (
     <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
+      <h1>Polkadot websocket</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          <strong>{count} messages</strong>
+        </p>
+        <p>
+          <strong>Last message: </strong>
+          {message && <MessageBlock message={message} />}
+        </p>
+        <p>
+          <strong>First message: </strong>
+          {message && <MessageBlock message={first} color="lightblue" />}
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
+
+function Val({
+  color,
+  item,
+  value,
+}: {
+  color?: string;
+  item: string;
+  value: string;
+}) {
+  return (
+    <div
+      style={{
+        margin: 10,
+        padding: 10,
+        backgroundColor: color ?? 'antiquewhite',
+      }}
+    >
+      <strong>{item}: </strong>
+      <span>{`${value}`}</span>
+    </div>
+  );
+}
+
+function MessageBlock({
+  message,
+  color,
+}: {
+  message: Record<string, string>;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Val
+        color={color}
+        item={'finalized_blockNum'}
+        value={`${message?.finalized_blockNum}`}
+      />
+      <Val color={color} item={'blockNum'} value={`${message?.blockNum}`} />
+      <Val color={color} item={'blockTime'} value={`${message?.blockTime}`} />
+      <Val color={color} item={'implName'} value={`${message?.implName}`} />
+      <Val
+        color={color}
+        item={'validator_count'}
+        value={`${message?.validator_count}`}
+      />
+      <Val color={color} item={'maxPools'} value={`${message?.maxPools}`} />
+      <Val
+        color={color}
+        item={'networkNode'}
+        value={`${message?.networkNode}`}
+      />
+      <Val
+        color={color}
+        item={'count_account'}
+        value={`${message?.count_account}`}
+      />
+      <Val
+        color={color}
+        item={'count_event'}
+        value={`${message?.count_event}`}
+      />
+      <Val
+        color={color}
+        item={'epochProcess'}
+        value={`${message?.epochProcess}`}
+      />
+    </div>
+  );
+}

@@ -73,7 +73,7 @@ const useWebSocket = (url: string): WebSocketConnection => {
     onclose: socket?.onclose,
     onmessage: socket?.onmessage,
     onerror: socket?.onerror,
-  };
+  } as const;
 };
 
 export default useWebSocket;
