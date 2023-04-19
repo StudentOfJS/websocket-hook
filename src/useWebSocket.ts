@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useReducer } from 'react';
 
 interface WebSocketMessage {
   data: any;
@@ -20,32 +20,30 @@ interface WebSocketConnection {
 }
 
 const useWebSocket = (url: string): WebSocketConnection => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [readyState, setReadyState] = useState<number>(WebSocket.CONNECTING);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(webSocketReducer, initialState);
 
   useEffect(() => {
     const ws = new WebSocket(url);
-    setSocket(ws);
-
+    dispatch({ type: 'socket', socket: ws });
     ws.onopen = () => {
-      setReadyState(WebSocket.OPEN);
+      // handle open
+      dispatch({ type: 'readyState', readyState: WebSocket.OPEN });
     };
 
     ws.onclose = () => {
-      setReadyState(WebSocket.CLOSED);
+      // handle close
+      dispatch({ type: 'readyState', readyState: WebSocket.CLOSED });
     };
 
     ws.onmessage = (event) => {
       // handle message
       const data = JSON.parse(event.data);
-      setMessages((prevMessages) => [...prevMessages, data]);
+      dispatch({ type: 'message', message: data });
     };
 
     ws.onerror = (event) => {
       // handle error
-      event && setError((event as ErrorEvent)?.message);
+      dispatch({ type: 'error', error: (event as ErrorEvent)?.message });
     };
 
     return () => {
@@ -54,26 +52,67 @@ const useWebSocket = (url: string): WebSocketConnection => {
   }, [url]);
 
   const send = (data: any) => {
-    if (readyState === 1) {
-      socket?.send(data);
+    if (state.readyState === 1) {
+      state.socket?.send(data);
     }
   };
 
   const close = () => {
-    socket?.close();
+    state.socket?.close();
   };
 
   return {
-    messages,
-    error,
+    ...state,
     send,
     close,
-    ready: readyState === 1,
-    onopen: socket?.onopen,
-    onclose: socket?.onclose,
-    onmessage: socket?.onmessage,
-    onerror: socket?.onerror,
+    onopen: state.socket?.onopen,
+    onclose: state.socket?.onclose,
+    onmessage: state.socket?.onmessage,
+    onerror: state.socket?.onerror,
   } as const;
+};
+
+interface WebSocketStateType {
+  error: string | null;
+  messages: any[];
+  readyState: number;
+  ready: boolean;
+  socket: WebSocket | null;
+}
+const initialState: WebSocketStateType = {
+  error: null,
+  messages: [],
+  ready: false,
+  readyState: WebSocket.CONNECTING,
+  socket: null,
+};
+
+type ActionType =
+  | { type: 'error'; error: string | null }
+  | { type: 'message'; message: any[] }
+  | { type: 'readyState'; readyState: number }
+  | { type: 'socket'; socket: WebSocket | null };
+
+const webSocketReducer = (
+  state: WebSocketStateType,
+  action: ActionType
+): WebSocketStateType => {
+  switch (action.type) {
+    case 'error':
+      return { ...state, error: action.error };
+    case 'message':
+      return { ...state, messages: [...state.messages, action.message] };
+    case 'readyState':
+      return {
+        ...state,
+        readyState: action.readyState,
+        ready: action.readyState === 1,
+      };
+    case 'socket':
+      return { ...state, socket: action.socket };
+    default:
+      return state;
+  }
 };
 
 export default useWebSocket;
